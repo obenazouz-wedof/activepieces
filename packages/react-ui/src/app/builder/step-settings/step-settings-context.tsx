@@ -1,5 +1,4 @@
 import { TObject, Type } from '@sinclair/typebox';
-import set from 'lodash/set';
 import {
   createContext,
   ReactNode,
@@ -13,7 +12,7 @@ import {
   PieceMetadataModel,
   PiecePropertyMap,
 } from '@activepieces/pieces-framework';
-import { Action, Trigger } from '@activepieces/shared';
+import { Action, setAtPath, Trigger } from '@activepieces/shared';
 
 import { formUtils } from '../piece-properties/form-utils';
 
@@ -39,6 +38,8 @@ export type StepSettingsContextState = {
   pieceModel: PieceMetadataModel | undefined;
   formSchema: TObject<any>;
   updateFormSchema: (key: string, newFieldSchema: PiecePropertyMap) => void;
+  skipValueChangeDetection: boolean;
+  setSkipValueChangeDetection: (skipChanges: boolean) => void;
 };
 
 export type StepSettingsProviderProps = {
@@ -59,7 +60,8 @@ export const StepSettingsProvider = ({
   const [formSchema, setFormSchema] = useState<TObject<any>>(
     Type.Object(Type.Any()),
   );
-
+  const [skipValueChangeDetection, setSkipValueChangeDetection] =
+    useState(false);
   const formSchemaRef = useRef<boolean>(false);
 
   if (!formSchemaRef.current && selectedStep) {
@@ -78,7 +80,7 @@ export const StepSettingsProvider = ({
         const newFieldSchema = formUtils.buildSchema(newFieldPropertyMap);
         const currentSchema = { ...prevSchema };
         const keyUpdated = createUpdatedSchemaKey(key);
-        set(currentSchema, keyUpdated, newFieldSchema);
+        setAtPath(currentSchema, keyUpdated, newFieldSchema);
         return currentSchema;
       });
     },
@@ -87,7 +89,14 @@ export const StepSettingsProvider = ({
 
   return (
     <StepSettingsContext.Provider
-      value={{ selectedStep, pieceModel, formSchema, updateFormSchema }}
+      value={{
+        selectedStep,
+        pieceModel,
+        formSchema,
+        updateFormSchema,
+        skipValueChangeDetection,
+        setSkipValueChangeDetection,
+      }}
     >
       {children}
     </StepSettingsContext.Provider>

@@ -1,7 +1,7 @@
 import { typeboxResolver } from '@hookform/resolvers/typebox';
 import deepEqual from 'deep-equal';
 import { t } from 'i18next';
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useDeepCompareEffect } from 'react-use';
 
@@ -37,8 +37,9 @@ import { LoopsSettings } from './loops-settings';
 import { PieceSettings } from './piece-settings';
 import { useStepSettingsContext } from './step-settings-context';
 
-const StepSettingsContainer = React.memo(() => {
-  const { selectedStep, pieceModel, formSchema } = useStepSettingsContext();
+const StepSettingsContainer = () => {
+  const { selectedStep, pieceModel, formSchema, skipValueChangeDetection } =
+    useStepSettingsContext();
   const [
     readonly,
     exitStepSettings,
@@ -118,14 +119,12 @@ const StepSettingsContainer = React.memo(() => {
     name: 'settings.input',
     control: form.control,
   });
-  const validChange = useWatch({
-    name: 'valid',
-    control: form.control,
-  });
+
   const itemsChange = useWatch({
     name: 'settings.items',
     control: form.control,
   });
+
   const conditionsChange = useWatch({
     name: 'settings.conditions',
     control: form.control,
@@ -151,24 +150,31 @@ const StepSettingsContainer = React.memo(() => {
   const previousSavedStep = useRef<Action | Trigger | null>(null);
 
   useEffect(() => {
-    const currentStep: Trigger | Action = JSON.parse(
-      JSON.stringify(form.getValues()),
-    );
-    currentStep.valid = form.formState.isValid;
-    if (previousSavedStep.current === null) {
-      previousSavedStep.current = currentStep;
-      return;
-    }
-    if (deepEqual(currentStep, previousSavedStep.current)) {
-      return;
-    }
-    previousSavedStep.current = currentStep;
+    //added timeout to avoid formstate validity not being updated when values are edited
+    setTimeout(() => {
+      const currentStep: Trigger | Action = JSON.parse(
+        JSON.stringify(form.getValues()),
+      );
+      currentStep.valid = form.formState.isValid;
+      if (previousSavedStep.current === null) {
+        previousSavedStep.current = currentStep;
+        return;
+      }
 
-    if (currentStep.type === TriggerType.PIECE) {
-      debouncedTrigger(currentStep as Trigger);
-    } else {
-      debouncedAction(currentStep as Action);
-    }
+      if (
+        deepEqual(currentStep, previousSavedStep.current) ||
+        skipValueChangeDetection
+      ) {
+        return;
+      }
+      previousSavedStep.current = currentStep;
+
+      if (currentStep.type === TriggerType.PIECE) {
+        debouncedTrigger(currentStep as Trigger);
+      } else {
+        debouncedAction(currentStep as Action);
+      }
+    });
   }, [
     inputChanges,
     itemsChange,
@@ -176,7 +182,6 @@ const StepSettingsContainer = React.memo(() => {
     conditionsChange,
     sourceCodeChange,
     inputUIInfo,
-    validChange,
     displayName,
   ]);
   const sidebarHeaderContainerRef = useRef<HTMLDivElement>(null);
@@ -274,6 +279,6 @@ const StepSettingsContainer = React.memo(() => {
       </form>
     </Form>
   );
-});
+};
 StepSettingsContainer.displayName = 'StepSettingsContainer';
 export { StepSettingsContainer };

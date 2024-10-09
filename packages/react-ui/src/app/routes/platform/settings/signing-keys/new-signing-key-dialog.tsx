@@ -56,7 +56,13 @@ export const NewSigningKeyDialog = ({
   });
 
   return (
-    <Dialog open={open} onOpenChange={(open) => setOpen(open)}>
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
+        form.reset();
+      }}
+    >
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -72,14 +78,18 @@ export const NewSigningKeyDialog = ({
               <span className="text-md">
                 {t(
                   'Please save this secret key somewhere safe and accessible. For security reasons,',
-                )}
+                )}{' '}
                 <span className="font-semibold">
                   {t(
                     "you won't be able to view it again after closing this dialog.",
                   )}
                 </span>
               </span>
-              <CopyToClipboardInput textToCopy={signingKey.privateKey} />
+              <CopyToClipboardInput
+                useInput={false}
+                fileName={signingKey.displayName}
+                textToCopy={signingKey.privateKey}
+              />
             </div>
           </div>
         )}
@@ -87,7 +97,7 @@ export const NewSigningKeyDialog = ({
           <Form {...form}>
             <form
               className="grid space-y-4"
-              onSubmit={(e) => e.preventDefault()}
+              onSubmit={form.handleSubmit(() => mutate())}
             >
               <FormField
                 name="displayName"

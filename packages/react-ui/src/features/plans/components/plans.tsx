@@ -14,9 +14,13 @@ import { projectHooks } from '@/hooks/project-hooks';
 import { HttpError } from '@/lib/api';
 import { authenticationSession } from '@/lib/authentication-session';
 import { projectApi } from '@/lib/project-api';
-import { UpdateProjectPlatformRequest } from '@activepieces/ee-shared';
+import {
+  MAXIMUM_ALLOWED_TASKS,
+  UpdateProjectPlatformRequest,
+} from '@activepieces/ee-shared';
 import { ProjectWithLimits } from '@activepieces/shared';
 
+import { useNewWindow } from '../../../components/embed-provider';
 import { TableTitle } from '../../../components/ui/table-title';
 import { billingApi } from '../api/billing-api';
 
@@ -94,15 +98,16 @@ const Plans: React.FC = () => {
       form.reset({ tasks: project.plan.tasks });
     }
   }, [project, form]);
+  const openNewWindow = useNewWindow();
   const { mutate: manageBilling, isPending: isBillingPending } = useMutation({
     mutationFn: async () => {
       if (subscriptionData?.subscription.subscriptionStatus === 'active') {
         const { portalLink } = await billingApi.portalLink();
-        window.open(portalLink, '_blank');
+        openNewWindow(portalLink);
         return;
       }
       const { paymentLink } = await billingApi.upgrade();
-      window.open(paymentLink, '_blank');
+      openNewWindow(paymentLink);
     },
     onSuccess: () => {},
     onError: () => toast(INTERNAL_ERROR_TOAST),
@@ -202,7 +207,7 @@ const Plans: React.FC = () => {
                       type="number"
                       placeholder={'15000'}
                       className="rounded-sm w-1/4"
-                      max={200000}
+                      max={MAXIMUM_ALLOWED_TASKS}
                       min={1}
                       onChange={(e) => field.onChange(+e.target.value)}
                     />

@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import deepEqual from 'deep-equal';
 import React, { useState, useRef } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { useDeepCompareEffect } from 'react-use';
+import { useDeepCompareEffectNoCheck } from 'use-deep-compare-effect';
 
 import { useBuilderStateContext } from '@/app/builder/builder-hooks';
 import { formUtils } from '@/app/builder/piece-properties/form-utils';
@@ -67,7 +67,7 @@ const DynamicProperties = React.memo((props: DynamicPropertiesProps) => {
   );
   /* eslint-enable react-hooks/rules-of-hooks */
 
-  useDeepCompareEffect(() => {
+  useDeepCompareEffectNoCheck(() => {
     const input: Record<string, unknown> = {};
     newRefreshers.forEach((refresher, index) => {
       input[refresher] = refresherValues[index];
@@ -78,7 +78,7 @@ const DynamicProperties = React.memo((props: DynamicPropertiesProps) => {
       !deepEqual(previousValues.current, refresherValues)
     ) {
       // the field state won't be cleared if you only unset the parent prop value
-      if (propertyMap)
+      if (propertyMap) {
         Object.keys(propertyMap).forEach((childPropName) => {
           form.setValue(
             `settings.input.${props.propertyName}.${childPropName}` as const,
@@ -88,6 +88,7 @@ const DynamicProperties = React.memo((props: DynamicPropertiesProps) => {
             },
           );
         });
+      }
       form.setValue(`settings.input.${props.propertyName}` as const, null, {
         shouldValidate: true,
       });
@@ -109,8 +110,10 @@ const DynamicProperties = React.memo((props: DynamicPropertiesProps) => {
           );
           setPropertyMap(response);
           updateFormSchema(`settings.input.${props.propertyName}`, response);
+
           form.setValue(`settings.input.${props.propertyName}`, defaultValue, {
             shouldValidate: true,
+            shouldDirty: true,
           });
         },
       },
